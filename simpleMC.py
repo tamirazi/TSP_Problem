@@ -1,6 +1,4 @@
-"""
-@author: ofersh@telhai.ac.il
-"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import calcTSP as TSP
