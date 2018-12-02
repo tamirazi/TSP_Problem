@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 import calcTSP as TSP
 import os
 
-
 def SimulatedAnnealing(n, G, max_evals, variation, func, seed=None):
-    T_init = 100000
-    T_min = 1e-4
+    bad_choice = 0
+    T_init = 35
+    T_min = 1e-5
     alpha = 0.999
     f_lower_bound = 6110
     eps_satisfactory = 1e-5
@@ -25,11 +25,13 @@ def SimulatedAnnealing(n, G, max_evals, variation, func, seed=None):
     history.append(calc_min)
     while (T > T_min) and eval_cntr < max_evals:
         for _ in range(max_internal_runs):
-            perm = variation(min_perm, 2)
+            perm = variation(min_perm , eval_cntr)
             calc = func(perm, G)
             eval_cntr += 1
             dE = calc - calc_min
             if dE <= 0 or local_state.uniform(size=1) < np.exp(-dE / T):
+                if local_state.uniform(size=1) < np.exp(-dE / T):
+                    bad_choice += 1
                 min_perm = perm
                 calc_min = calc
             if dE < 0:
@@ -38,37 +40,24 @@ def SimulatedAnnealing(n, G, max_evals, variation, func, seed=None):
             history.append(calc_min)
             if np.mod(eval_cntr, int(max_evals / 10)) == 0:
                 print(eval_cntr, " evals: Best path found=", calc_min)
-                print(T)
+                print("Temperature is : ", T)
             if calc_best < f_lower_bound + eps_satisfactory:
                 T = T_min
                 break
         T *= alpha
-    return best_perm, calc_best, history ,eval_cntr
-
+    return best_perm, calc_best, history, eval_cntr, bad_choice
 
 #
 
-
-def myswap(perm, number_of_swaps):
-    temp = np.copy(perm)
-    for _ in range(number_of_swaps):
-        num1, num2 = np.random.choice(perm, 2)
-        a = np.where(temp == num1)
-        b = np.where(temp == num2)
-        temp[b] = num1
-        temp[a] = num2
-
+def myswap3(perm , iter):
+    # this func choose an index (i) and size randomly
+    # and reverse the permutation from this index by length -> size
+    end = round(iter/100000) * 15
+    temp = list(np.copy(perm))
+    size = np.random.randint(0, len(perm) - end)
+    i = np.random.randint(0, len(perm) - size)
+    temp[i: i + size] = reversed(temp[i: i + size])
     return temp
-
-def findTemp():
-    NTrials = 10 ** 6
-    eval=0
-    perm = np.random.permutation(n)
-    for _ in range(NTrials):
-        perm2 = myswap(perm, 2)
-        calc = TSP.computeTourLength(perm2, G)
-        eval += 1
-        dE = calc - calc_min
 
 
 if __name__ == "__main__":
@@ -86,14 +75,16 @@ if __name__ == "__main__":
             G[i, j] = np.linalg.norm(
                 np.array([float(data[i][1]), float(data[i][2])]) - np.array([float(data[j][1]), float(data[j][2])]))
             G[j, i] = G[i, j]
-    Nruns=30
+    Nruns = 30
     fbest = []
     xbest = []
-    for i in range(Nruns) :
-        xmin,fmin,history,eval = SimulatedAnnealing(n, G, NTrials, myswap, TSP.computeTourLength)
-        plt.semilogy(history)
+    for i in range(Nruns):
+        xmin, fmin, history, eval, bad_choices = SimulatedAnnealing(n, G, NTrials, myswap3, TSP.computeTourLength)
+        plt.ylim(6110, 30000)
+        plt.plot(history)
         plt.show()
-        print(i,": minimal path found is ", fmin,"\n perm ", xmin , "\n evals: ",eval)
+        print("bad : ", bad_choices)
+        print(i, ": minimal path found is ", fmin, "\n perm ", xmin, "\n evals: ", eval)
         fbest.append(fmin)
         xbest.append(xmin)
-    print("====\n Best ever: ",min(fbest),"x*=",xbest[fbest.index(min(fbest))])
+    print("====\n Best ever: ", min(fbest), "x*=", xbest[fbest.index(min(fbest))])
