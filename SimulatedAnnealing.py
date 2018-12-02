@@ -1,8 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-@author: ofersh@telhai.ac.il
-Simulated Annealing on a continuous domain bounded within [lb,ub]**n
-"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import calcTSP as TSP
